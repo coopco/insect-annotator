@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Tracker</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Track Annotator">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="row">
+      <div class="annotator">
+        <div class="upload">
+          <label for="videofile">Select video:</label>
+          <input type="file" id="videofile" name="video" accept="video/*">
+          <label for="annotationfile">Select annotation file:</label>
+          <input type="file" id="annotationfile" name="annotation" accept="text/*">
+        </div>
+        <div class="container" id="canvas-wrapper">
+          <div class="videocontainer">
+            <canvas id="canvas" width="1024" height="542"></canvas>
+            <video hidden id="video">
+              <source id="currentVID" type="video/mp4">
+            </video>
+          </div>
+          <div class="slidecontainer">
+            <input type="range" min="0" max="0" value="0" class="slider" id="range_scroll">
+          </div>
+        </div>
+        <!--<canvas id="canvas" width="1024" height="542"></canvas>-->
+
+        <div style="float: left">
+          <label for="field_fps">Set video FPS:</label>
+          <input id="field_fps" type="number" placeholder="FPS" size=4>
+          <button id="btn_fps_change">Update FPS</button>
+        </div>
+        <div style="margin: 0 auto; width: 200px; text-align: center">
+            <p class="current_frame" id="current_frame" align="center"></p>
+        </div>
+
+        <div class="frame_controls">
+            <button id="btn_first_frame">First frame</button>
+            <button id="btn_last_frame">Last frame</button>
+            <br>
+            <label for="text_field_frame">Set frame:</label>
+            <input id="text_field_frame" type="number" placeholder="Frame ID" size=8>
+        </div>
+
+        <div class="row">
+          <div class="column">
+            <div class="row">
+              <div class="download">
+                <button id="btn_track_down">Download all tracks</button>
+                <button id="btn_ant_track_down">Download marked tracks</button>
+              </div>
+            </div>
+            <div class="row">
+              <div class="undo_controls">
+              <!--<h3>Revert changes</h3>-->
+              <button id="btn_revert_tracks">Revert selected track(s)</button>
+              <button id="btn_restore_tracks">Restore deleted track(s)</button>
+              </div>
+            </div>
+          </div>
+          <div class="view_controls column">
+            <div class="row">
+              <button id="btn_mark_tracks">Toggle mark</button>
+              <button id="btn_clear_marked">Clear all marks</button>
+            </div>
+            <div class="row">
+              <input type="checkbox" id="chkbox_show_track_mode">Show only marked tracks</button>
+            </div>
+            <div class="row">
+              <input type="checkbox" id="chkbox_dot_mode">Dot mode</button>
+              <input type="checkbox" id="chkbox_show_mode">Show only nearby</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="tools">
+        <h3>Tools</h3>
+        <p>Left-click to select track.</p>
+        <p>Shift-click to select multiple tracks.</p>
+        <p>Right-click to move track.</p>
+        <p>Ctrl-click to add new track, or add to selected track.</p>
+          <div class="delete_buttons">
+            <button id="btn_delete_tracks">Delete in all frames</button>
+            <button id="btn_delete_boxes">Delete in current frame</button>
+            <br>
+            <button id="btn_delete_prev">Delete in previous frames</button>
+            <button id="btn_delete_next">Delete in future frames</button>
+          </div>
+          <button id="btn_merge_tracks">Merge tracks</button>
+        </div>
+
+        <div class="size_controls">
+          <h3>Box Size</h3>
+          <label for="field_width">Box width:</label>
+          <input id="field_width" type="number" placeholder="Width" step=10 size=4>
+          <br>
+          <label for="field_height">Box height:</label>
+          <input id="field_height" type="number" placeholder="height" step=10 size=4>
+          <br>
+          <button id="btn_size_update">Update size</button>
+          <input type="checkbox" id="chkbox_interpolate_size">Interpolate size</button>
+        </div>
+
+
+        <div class="options">
+          <h3>Options</h3>
+          <input type="checkbox" id="chkbox_interpolation_mode">Interpolation</button>
+        </div>
+
+        <div class="track_options">
+        <!--<h3>Track Options</h3>-->
+        <label for="field_id">Set track ID:</label>
+        <input id="field_id" type="number" placeholder="Track ID" disabled size=8>
+        <br>
+        <label for="field_color">Set track colour:</label>
+        <input id="field_color" type="color">
+        </div>
+
+        <div class="text_output">
+        <pre>
+        <p id="p_state">Selected Track(s):</p>
+        </pre>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script type="module" src="./src/index.js"></script>
+</body>
+</html>
