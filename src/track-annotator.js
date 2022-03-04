@@ -160,7 +160,6 @@ export class TrackAnnotator {
     this.FRAMERATE = 15;
   }
 
-  // TODO move text changing code elsewhere
   toggleInterpolation () {
     this.interpolation = !this.interpolation
     this.redrawCanvas()

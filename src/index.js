@@ -373,7 +373,6 @@ canvas.addEventListener('click', function (event) {
 
   updateUi()
   updateText()
-
   annotator.redrawCanvas()
 })
 
