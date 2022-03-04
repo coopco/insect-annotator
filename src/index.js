@@ -135,6 +135,7 @@ function parseCsvData(rawData) {
 }
 
 document.getElementById('videofile').addEventListener('change', async function (e) {
+  URL.revokeObjectURL(annotator.source.src)
   const file = event.target.files[0];
   annotator.source.src = URL.createObjectURL(file);
 

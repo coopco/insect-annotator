@@ -409,7 +409,7 @@ export class TrackAnnotator {
     })
 
     let csvContent = csvRecords.map(e => e.join(",")).join("\n");
-    saveFile(`$export.csv`, "data:text/csv", new Blob([csvContent],{type:""}));
+    saveFile("export.csv", "data:text/csv", new Blob([csvContent],{type:""}));
 
     function saveFile (name, type, data) {
       if (data != null && navigator.msSaveBlob)
