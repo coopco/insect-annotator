@@ -39,8 +39,10 @@
         </div>
 
         <div class="frame_controls">
-            <button id="btn_first_frame">First frame</button>
-            <button id="btn_last_frame">Last frame</button>
+            <button id="btn_first_frame">First</button>
+            <button id="btn_prev_frame">Prev</button>
+            <button id="btn_next_frame">Next</button>
+            <button id="btn_last_frame">Last</button>
             <br>
             <label for="text_field_frame">Set frame:</label>
             <input id="text_field_frame" type="number" placeholder="Frame ID" size=8>
@@ -104,7 +106,7 @@
           <input id="field_height" type="number" placeholder="height" step=10 size=4>
           <br>
           <button id="btn_size_update">Update size</button>
-          <input type="checkbox" id="chkbox_interpolate_size">Interpolate size</button>
+          <input type="checkbox" id="chkbox_interpolate_size">Apply to all frames</button>
         </div>
 
 
@@ -124,7 +126,9 @@
 
         <div class="text_output">
         <pre>
-        <p id="p_state">Selected Track(s):</p>
+            <p id="p_state">Selected Tracks:
+
+Marked Tracks:</p>
         </pre>
         </div>
       </div>

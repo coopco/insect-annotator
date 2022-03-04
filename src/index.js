@@ -6,12 +6,9 @@ let canvas = document.getElementById('canvas')
 let pText = document.getElementById('current_frame')
 let pState = document.getElementById('p_state')
 let ctx = canvas.getContext('2d');
-let taskName = 'CU10L1B1In_0'
-let publicDir = `./public/refining_v3/${taskName}`
-let frameCount = 500
-let correctionFlag = true
+let frameCount = 1
 
-let annotator = new TrackAnnotator(publicDir, canvas, frameCount, pText, correctionFlag, taskName)
+let annotator = new TrackAnnotator(canvas, frameCount, pText)
 await annotator.init()
 
 let field_id = document.getElementById('field_id')
@@ -32,29 +29,45 @@ document.getElementById('chkbox_show_track_mode').checked = false
 let chkbox_interpolate_size = document.getElementById('chkbox_interpolate_size')
 chkbox_interpolate_size.checked = true
 
+// Handle hotkeys
 document.addEventListener('keydown', async function (e) {
-  // e.preventDefault()
   let keyCode = event.keyCode
   switch (keyCode) {
-    case 17:
+    case 17: // L-Ctrl
       previewBox = true
       break;
-    case 68:
+    case 68: // d
       await annotator.goToNextFrame();
       break;
-    case 65:
+    case 65: // a
       await annotator.goToPreviousFrame();
+      break;
+    case 77: // m
+      annotator.markSelected()
+      updateText()
+      break;
+    case 82: // r
+      annotator.deleteSelectedTracks();
+      break;
+    case 87: // w
+      annotator.goToLastFrame();
+      break;
+    case 83: // s
+      annotator.goToFirstFrame();
+      break;
+    case 88: // x
+      annotator.deleteSelectedBoxes();
       break;
     default:
       break;
   }
 });
 
+// For preview box
 document.addEventListener('keyup', async function (e) {
-  // e.preventDefault()
   let keyCode = event.keyCode
   switch (keyCode) {
-    case 17:
+    case 17: // L-Ctrl
       previewBox = false
       break;
     default:
@@ -73,6 +86,12 @@ document.getElementById('btn_first_frame').addEventListener('click', async funct
 })
 document.getElementById('btn_last_frame').addEventListener('click', async function (e) {
   await annotator.goToLastFrame()
+})
+document.getElementById('btn_prev_frame').addEventListener('click', async function (e) {
+  await annotator.goToPreviousFrame()
+})
+document.getElementById('btn_next_frame').addEventListener('click', async function (e) {
+  await annotator.goToNextFrame()
 })
 document.getElementById('chkbox_dot_mode').addEventListener('change', function (e) {
   annotator.toggleDotMode()
@@ -93,14 +112,12 @@ document.getElementById('range_scroll').addEventListener('input', function (e) {
 document.getElementById('text_field_frame').addEventListener('keydown', function (e) {
   if(e.key === 'Enter') {
     let value = Number(document.getElementById('text_field_frame').value)
-    console.log(value)
     annotator.goToFrame(value)
     // alert(ele.value);
   }
 })
 document.getElementById('text_field_frame').addEventListener('input', function (e) {
   let value = Number(document.getElementById('text_field_frame').value)
-  console.log(value)
   annotator.goToFrame(value)
 })
 
@@ -114,7 +131,6 @@ function parseCsvData(rawData) {
     return [Number(e[0]), Number(e[1]), Number(e[2]), Number(e[3]), Number(e[4]), Number(e[5])]
   })
 
-  console.log(csv)
   return csv
 }
 
@@ -140,7 +156,6 @@ document.getElementById('videofile').addEventListener('change', async function (
   timerCallback()
 
   annotator.frameCount = Math.round(annotator.video.duration * annotator.FRAMERATE)
-  console.log(annotator.frameCount)
   document.getElementById("range_scroll").max = annotator.frameCount - 1
   //document.getElementById("range_scroll").style.width = `${videoWidth}px`
 
@@ -164,25 +179,24 @@ function updateText() {
     return `ID: ${e.id}, Frames ${e.head.frameId}-${e.getTrackTail().frameId}`
   })
   pState.textContent = `Selected Tracks:\n ${trackText.join('\n ')}`
-  if (selected.length > 1) {
-
-  } else if (selected.length == 1) {
-
-  } else { // None selected
-
-  }
+  let marked = annotator.tracks.filter(e => e.marked).map(e => e.id)
+  pState.textContent = pState.textContent + `\n\nMarked Tracks:\n ${marked.join(', ')}`
 }
 
 function updateUi() {
   let selected = annotator.getSelectedTracks()
 
   if (selected.length > 1) {
+    // Disable track ID field
     field_id.disabled = true
   } else if (selected.length == 1) {
     let box = selected[0].getBoxAtFrame(annotator.currentFrameIndex)
     if (box) {
+      // Update box dimensions
       field_width.value = box.w
       field_height.value = box.h
+      annotator.BOX_WIDTH = box.w
+      annotator.BOX_HEIGHT = box.h
     }
     field_id.value = selected[0].id
     field_id.disabled = false
@@ -214,6 +228,7 @@ document.getElementById('btn_merge_tracks').addEventListener('click', (e) => {
 
 document.getElementById('btn_mark_tracks').addEventListener('click', (e) => {
   annotator.markSelected()
+  updateText()
 })
 
 document.getElementById('btn_delete_prev').addEventListener('click', (e) => {
@@ -226,11 +241,9 @@ document.getElementById('btn_delete_next').addEventListener('click', (e) => {
 
 document.getElementById('btn_clear_marked').addEventListener('click', (e) => {
   annotator.clearMarked()
+  updateText()
 })
 
-document.getElementById('btn_revert_tracks').addEventListener('click', (e) => {
-  console.log(annotator.csvData)
-})
 
 function updateSize(width, height) {
   let selected = annotator.getSelectedTracks()
@@ -241,19 +254,26 @@ function updateSize(width, height) {
     annotator.BOX_WIDTH = width
     annotator.BOX_HEIGHT = height
     if (chkbox_interpolate_size.checked) {
+      // Apply for all frames
       selected.forEach(e => {
         e.getBoxes().forEach(e => {
+          // Recenter box
+          e.x = Math.floor(e.x + (e.w - width)/2)
+          e.y = Math.floor(e.y + (e.h - height)/2)
           e.w = width
           e.h = height
         })
       })
     } else {
+      // Apply to this frame only
       selected.forEach(e => {
         let box = e.getBoxAtFrame(annotator.currentFrameIndex)
         if (box) {
+          // Recenter box
+          box.x = Math.floor(box.x + (box.w - width)/2)
+          box.y = Math.floor(box.y + (box.h - height)/2)
           box.w = width
           box.h = height
-          console.log(box.getBox())
         }
       })
     }
@@ -312,6 +332,7 @@ document.getElementById('btn_restore_tracks').addEventListener('click', (e) => {
     return e.id
   })
   let oldTrackIds = annotator.csvData.map(e => e[1].id).filter((e, index, arr) => arr.indexOf(e) === index)
+  // Get track ids from csv that are no longer present
   oldTrackIds = oldTrackIds.filter(e => {
     return !(trackIds.includes(e))
   }).forEach(e => {
@@ -352,7 +373,6 @@ canvas.addEventListener('click', function (event) {
   updateUi()
   updateText()
 
-  // TODO Moving box?
   annotator.redrawCanvas()
 })
 

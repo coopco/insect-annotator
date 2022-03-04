@@ -1,12 +1,3 @@
-// Better trackColors code
-// TODO Resize by dragging border
-//    Drag?
-// TODO Hover preview for adding button
-// Next:
-//    Record mouse position on mousemove
-//    Add hover box when holding control
-//        not needed if clicking and dragging?
-
 import * as utils from './utils.js'
 
 class Track {
@@ -139,13 +130,11 @@ class Box {
 
 
 export class TrackAnnotator {
-  constructor(publicDir, canvas, frameCount, textOutput, correctionFlag, taskName) {
-    this.publicDir = publicDir
+  constructor(canvas, frameCount, textOutput) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
     this.frameCount = frameCount
     this.textOutput = textOutput
-    this.taskName = taskName
     this.BOX_WIDTH = 75
     this.BOX_HEIGHT = 75
     this.currentFrameIndex = 0
@@ -164,7 +153,6 @@ export class TrackAnnotator {
 
     this.tracks = []
     this.currentBoxes = []
-    this.annotationFile = `${this.publicDir}/${taskName}.csv`
     // TODO handle better
     this.range = document.getElementById('range_scroll')
     this.video = document.getElementById('video');
@@ -230,11 +218,9 @@ export class TrackAnnotator {
 
   restoreTrack(id) {
     let csvData = this.csvData
-    console.log(csvData)
     let detections = csvData.filter(e => e[1].id === id).sort((a, b) => {
       return (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0)
     })
-    console.log(detections)
     //let track = new Point(...detections[0])
     let trackId = detections[0][1].id
     let track = new Track(trackId)
@@ -262,7 +248,6 @@ export class TrackAnnotator {
   async loadCurrentFrameData () {
     let index = this.currentFrameIndex
 
-    // TODO different framerates
     // Adding 1ms seems to make behaviour consistent on firefox and chrome
     this.video.currentTime = index / this.FRAMERATE + 0.001
   }
@@ -316,7 +301,6 @@ export class TrackAnnotator {
         this.ctx.fillText(String(trackId), coords[0], coords[1]);
 
         // Indicate if box is marked
-        // TODO what if box color is red?
         if (box.track.marked) {
           this.ctx.beginPath();
           this.ctx.lineWidth = "2";
@@ -327,14 +311,12 @@ export class TrackAnnotator {
           this.ctx.stroke()
         }
       } else {
-        console.log(dot)
         this.ctx.beginPath();
         this.ctx.arc(dot[0], dot[1], 5, 0, 2 * Math.PI, false);
         this.ctx.fillStyle = `#${this.trackColors[trackId]}`
         this.ctx.fill();
 
         // Indicate if box is marked
-        // TODO what if box color is red?
         if (box.track.marked) {
           this.ctx.beginPath();
           this.ctx.arc(dot[0], dot[1], 2, 0, 2 * Math.PI, false);
@@ -427,8 +409,7 @@ export class TrackAnnotator {
     })
 
     let csvContent = csvRecords.map(e => e.join(",")).join("\n");
-    console.log(csvContent)
-    saveFile(`${this.taskName}.csv`, "data:text/csv", new Blob([csvContent],{type:""}));
+    saveFile(`$export.csv`, "data:text/csv", new Blob([csvContent],{type:""}));
 
     function saveFile (name, type, data) {
       if (data != null && navigator.msSaveBlob)
@@ -482,7 +463,6 @@ export class TrackAnnotator {
       // TODO kind of ugly
       box.track.removeBox(box.frameId)
     }
-    // TODO deselect both splits, or select prev split?
     this.currentBoxes = this.currentBoxes.filter(e => {
       return !(e.track.id === id)
     })
@@ -508,7 +488,6 @@ export class TrackAnnotator {
     this.redrawCanvas()
   }
 
-  // TODO How does this delete in all frames?
   deleteSelectedTracks() {
     this.tracks = this.tracks.filter(e => {
       return !e.selected
@@ -537,7 +516,6 @@ export class TrackAnnotator {
     // TODO Handle more than 2 tracks selected
     let selected = this.getSelectedTracks()
     if (selected.length == 2) {
-      console.log(selected)
       this.mergeTracks(...selected)
     } else {
       alert("Must select exactly 2 tracks to merge. Try clearing your selection.")
@@ -586,7 +564,6 @@ export class TrackAnnotator {
 
   addBox(x, y) {
     let newTrackId = Math.max(...this.trackIds, -1) + 1
-    console.log(this.trackIds)
     this.trackIds.push(newTrackId)
     this.trackColors[newTrackId] = utils.getRandomColor()
     // If new track
@@ -599,7 +576,6 @@ export class TrackAnnotator {
     // If new track
     track.head = node
 
-    // TODO Merge tracks and interpolate if necessary
     let selected = this.getSelectedTracks()
     // If only one track selected and it is not in current frame
     if (selected.length == 1 && !(selected[0].getBoxAtFrame(this.currentFrameIndex))) {
@@ -637,7 +613,6 @@ export class TrackAnnotator {
   }
 
   interpolate(box1, box2) {
-    // TODO Handle boxes of different tracks?
     let track  = box1.track
     let prevNode = box1
     let nFrames = box2.frameId - box1.frameId
