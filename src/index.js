@@ -360,7 +360,7 @@ canvas.addEventListener('click', function (event) {
   const y = event.clientY - rect.top
   const box = annotator.getBoxAtXY(x, y)
   // Give ctrl priority
-  if (event.ctrlKey) {
+  if (event.ctrlKey || previewBox) {
     annotator.addBox(x, y)
   } else {
     if (!event.shiftKey) {
