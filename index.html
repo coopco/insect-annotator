@@ -19,7 +19,7 @@
         <div class="container" id="canvas-wrapper">
           <div class="videocontainer">
             <canvas id="canvas" width="1024" height="542"></canvas>
-            <video hidden id="video">
+            <video hidden id="video" preload="">
               <source id="currentVID" type="video/mp4">
             </video>
           </div>
@@ -34,19 +34,23 @@
           <input id="field_fps" type="number" placeholder="FPS" size=4>
           <button id="btn_fps_change">Update FPS</button>
         </div>
+
+        <div style="float: right">
+            <label for="text_field_frame">Set frame:</label>
+            <input id="text_field_frame" type="number" placeholder="Frame ID" size=8>
+        </div>
+
         <div style="margin: 0 auto; width: 200px; text-align: center">
             <p class="current_frame" id="current_frame" align="center"></p>
         </div>
 
         <div class="frame_controls">
-            <button id="btn_first_frame">First</button>
-            <button id="btn_prev_frame">Prev</button>
-            <button id="btn_next_frame">Next</button>
-            <button id="btn_last_frame">Last</button>
-            <br>
-            <label for="text_field_frame">Set frame:</label>
-            <input id="text_field_frame" type="number" placeholder="Frame ID" size=8>
+            <button id="btn_first_frame" title="Hotkey: s">First</button>
+            <button id="btn_prev_frame" title="Hotkey: a">Prev</button>
+            <button id="btn_next_frame" title="Hotkey: d">Next</button>
+            <button id="btn_last_frame" title="Hotkey: w">Last</button>
         </div>
+
 
         <div class="row">
           <div class="column">
@@ -57,10 +61,13 @@
               </div>
             </div>
             <div class="row">
+              <button id="btn_undo">Undo last change</button>
+            </div>
+            <div class="row">
               <div class="undo_controls">
               <!--<h3>Revert changes</h3>-->
-              <button id="btn_revert_tracks">Revert selected track(s)</button>
-              <button id="btn_restore_tracks">Restore deleted track(s)</button>
+                <button id="btn_revert_tracks">Revert selected track(s)</button>
+                <button id="btn_restore_tracks">Restore deleted track(s)</button>
               </div>
             </div>
           </div>
@@ -70,11 +77,15 @@
               <button id="btn_clear_marked">Clear all marks</button>
             </div>
             <div class="row">
-              <input type="checkbox" id="chkbox_show_track_mode">Show only marked tracks</button>
+              <input type="checkbox" id="chkbox_show_track_mode">Show only marked</button>
+              <input type="checkbox" id="chkbox_dot_mode">Dot mode</button>
             </div>
             <div class="row">
-              <input type="checkbox" id="chkbox_dot_mode">Dot mode</button>
               <input type="checkbox" id="chkbox_show_mode">Show only nearby</button>
+            </div>
+            <div class="row">
+              <label for="range_distance" id="label_range_distance">Distance (50):</label>
+              <input type="range" id="range_distance" min="0" max="200" value="50">
             </div>
           </div>
         </div>
@@ -83,27 +94,27 @@
       <div class="controls">
         <div class="tools">
         <h3>Tools</h3>
-        <p>Left-click to select track.</p>
+        <p>Left-click to select track. Press 'b' to change left-click to the add box/track tool.</p>
         <p>Shift-click to select multiple tracks.</p>
         <p>Right-click to move track.</p>
         <p>Ctrl-click to add new track, or add to selected track.</p>
           <div class="delete_buttons">
-            <button id="btn_delete_tracks">Delete in all frames</button>
-            <button id="btn_delete_boxes">Delete in current frame</button>
+            <button id="btn_delete_tracks" title="Hotkey: d">Delete in all frames</button>
+            <button id="btn_delete_boxes" title="Hotkey: x">Delete in current frame</button>
             <br>
             <button id="btn_delete_prev">Delete in previous frames</button>
             <button id="btn_delete_next">Delete in future frames</button>
           </div>
-          <button id="btn_merge_tracks">Merge tracks</button>
+          <button id="btn_merge_tracks" title="Hotkey: m">Merge tracks</button>
         </div>
 
         <div class="size_controls">
           <h3>Box Size</h3>
           <label for="field_width">Box width:</label>
-          <input id="field_width" type="number" placeholder="Width" step=10 size=4>
+          <input id="field_width" type="number" placeholder="Width" step=5 size=4>
           <br>
           <label for="field_height">Box height:</label>
-          <input id="field_height" type="number" placeholder="height" step=10 size=4>
+          <input id="field_height" type="number" placeholder="height" step=5 size=4>
           <br>
           <button id="btn_size_update">Update size</button>
           <input type="checkbox" id="chkbox_interpolate_size">Apply to all frames</button>
@@ -135,6 +146,11 @@ Marked Tracks:</p>
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/mediainfo.js/dist/mediainfo.min.js"
+    ></script>
 
     <script type="module" src="./src/index.js"></script>
 </body>

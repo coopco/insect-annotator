@@ -158,6 +158,9 @@ export class TrackAnnotator {
     this.video = document.getElementById('video');
     this.source = document.getElementById('currentVID');
     this.FRAMERATE = 15;
+    this.vidDuration = 30;
+    this.nearbyDistance = 50;
+    this.undoPoint = [];
   }
 
   toggleInterpolation () {
@@ -247,8 +250,8 @@ export class TrackAnnotator {
   async loadCurrentFrameData () {
     let index = this.currentFrameIndex
 
-    // Adding 1ms seems to make behaviour consistent on firefox and chrome
-    this.video.currentTime = index / this.FRAMERATE + 0.001
+    // Adding 0.0001 seems to avoid rounding errors
+    this.video.currentTime = index / this.FRAMERATE + 0.0001
   }
 
   drawBackground () {
@@ -284,7 +287,7 @@ export class TrackAnnotator {
           return (eDot[0]-dot[0])**2 + (eDot[1]-dot[1])**2
         })
 
-        if (Math.sqrt(Math.min(...distances)) > 50) {
+        if (Math.sqrt(Math.min(...distances)) > this.nearbyDistance) {
           continue
         }
       }
@@ -386,7 +389,43 @@ export class TrackAnnotator {
   }
 
   updateText() {
-    this.textOutput.textContent = `Current frame: ${this.currentFrameIndex}`
+    this.textOutput.textContent = `Frame index: ${this.currentFrameIndex}/${this.frameCount-1}`
+  }
+
+  parseCsvData(rawData) {
+    let lines = rawData.split('\n')
+    let maxImageId = -1
+    let csv = lines.filter(line => line.length > 0 && !line.includes('image_id')).map(line => {
+      let e = line.split(',')
+      maxImageId = Math.max(maxImageId, Number(e[0]))
+      return [Number(e[0]), Number(e[1]), Number(e[2]), Number(e[3]), Number(e[4]), Number(e[5])]
+    })
+
+    return csv
+  }
+
+  // TODO clean up this code
+  updateUndoPoint(onlyMarked = false) {
+    let csvRecords = [["image_id", "track_id", "x", "y", "w", "h"]]
+    let tracks = onlyMarked ? this.tracks.filter(track => track.marked) : this.tracks
+    // If no tracks marked, download all
+    if (tracks.length == 0) {
+      tracks = this.tracks
+    }
+
+    tracks.map(track => {
+      let node = track.head
+      while (node !== undefined) {
+        csvRecords.push([
+          node.frameId, track.id, node.x, node.y, node.w, node.h
+        ])
+        node = node.next
+      }
+    })
+
+    let csvContent = csvRecords.map(e => e.join(",")).join("\n");
+
+    this.undoPoint = csvContent
   }
 
   exportCsvData(onlyMarked = false) {

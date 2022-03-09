@@ -1,3 +1,4 @@
+// TODO put updateUndoPoint stuff somewhere else
 import {TrackAnnotator} from "./track-annotator.js"
 
 let range;
@@ -42,9 +43,26 @@ document.addEventListener('keydown', async function (e) {
     case 65: // a
       await annotator.goToPreviousFrame();
       break;
+    case 66: // b
+      previewBox = !previewBox
+      break;
+    //case 73: // i
+      // Increase height
+      //playVideo();
+      //break;
+    //case 74: // j
+    //  // Decrease width
+    //  break;
+    //case 75: // k
+    //  // Decrease height
+    //  break;
+    //case 76: // l
+    //  // Increase width
+    //  break;
     case 77: // m
-      annotator.markSelected()
-      updateText()
+      //annotator.markSelected()
+      //updateText()
+      annotator.mergeSelected()
       break;
     case 82: // r
       annotator.deleteSelectedTracks();
@@ -109,6 +127,11 @@ document.getElementById('range_scroll').addEventListener('input', function (e) {
   let frameId = Number(document.getElementById('range_scroll').value)
   annotator.goToFrame(frameId)
 })
+document.getElementById('range_distance').addEventListener('input', function (e) {
+  let dist = Number(document.getElementById('range_distance').value)
+  document.getElementById('label_range_distance').innerHTML = `Distance (${dist}):`
+  annotator.nearbyDistance = dist
+})
 document.getElementById('text_field_frame').addEventListener('keydown', function (e) {
   if(e.key === 'Enter') {
     let value = Number(document.getElementById('text_field_frame').value)
@@ -122,21 +145,10 @@ document.getElementById('text_field_frame').addEventListener('input', function (
 })
 
 
-function parseCsvData(rawData) {
-  let lines = rawData.split('\n')
-  let maxImageId = -1
-  let csv = lines.filter(line => line.length > 0 && !line.includes('image_id')).map(line => {
-    let e = line.split(',')
-    maxImageId = Math.max(maxImageId, Number(e[0]))
-    return [Number(e[0]), Number(e[1]), Number(e[2]), Number(e[3]), Number(e[4]), Number(e[5])]
-  })
-
-  return csv
-}
-
 document.getElementById('videofile').addEventListener('change', async function (e) {
   URL.revokeObjectURL(annotator.source.src)
   const file = event.target.files[0];
+
   annotator.source.src = URL.createObjectURL(file);
 
   annotator.video.load();
@@ -156,11 +168,53 @@ document.getElementById('videofile').addEventListener('change', async function (
 
   timerCallback()
 
-  annotator.frameCount = Math.round(annotator.video.duration * annotator.FRAMERATE)
-  document.getElementById("range_scroll").max = annotator.frameCount - 1
+  //annotator.frameCount = Math.round(annotator.video.duration * annotator.FRAMERATE)
+  //document.getElementById("range_scroll").max = annotator.frameCount - 1
   //document.getElementById("range_scroll").style.width = `${videoWidth}px`
 
   console.log('Video is loaded.')
+})
+
+const onChangeFile = (mediainfo) => {
+  const file = document.getElementById("videofile").files[0]
+  if (file) {
+    pText.value = 'Working…'
+
+    const getSize = () => file.size
+
+    const readChunk = (chunkSize, offset) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          if (event.target.error) {
+            reject(event.target.error)
+          }
+          resolve(new Uint8Array(event.target.result))
+        }
+        reader.readAsArrayBuffer(file.slice(offset, offset + chunkSize))
+      })
+
+    mediainfo
+      .analyzeData(getSize, readChunk)
+      .then((result) => {
+        console.log(result.media.track[1].FrameRate)
+        console.log(result.media.track[1].FrameCount)
+
+        // TODO Make sure track[1] is always correct
+        annotator.FRAMERATE = result.media.track[1].FrameRate
+        annotator.frameCount = result.media.track[1].FrameCount
+        document.getElementById("range_scroll").max = annotator.frameCount - 1
+        // Not rounding, in case framerate is non integer
+        field_fps.value = annotator.FRAMERATE
+      })
+      .catch((error) => {
+        // TODO
+      })
+  }
+}
+
+MediaInfo({ format: 'object' }, (mediainfo) => {
+  document.getElementById("videofile").addEventListener('change', () => onChangeFile(mediainfo))
 })
 
 // TODO put somehwere better
@@ -210,20 +264,23 @@ document.getElementById('annotationfile').addEventListener('change', async funct
   let file = event.target.files[0];
   let reader = new FileReader();
   reader.onload = function() {
-    annotator.updateAnnotations(parseCsvData(reader.result))
+    annotator.updateAnnotations(annotator.parseCsvData(reader.result))
   }
   reader.readAsText(file)
 })
 
 document.getElementById('btn_delete_boxes').addEventListener('click', (e) => {
+  annotator.updateUndoPoint();
   annotator.deleteSelectedBoxes()
 })
 
 document.getElementById('btn_delete_tracks').addEventListener('click', (e) => {
+  annotator.updateUndoPoint();
   annotator.deleteSelectedTracks()
 })
 
 document.getElementById('btn_merge_tracks').addEventListener('click', (e) => {
+  annotator.updateUndoPoint();
   annotator.mergeSelected()
 })
 
@@ -233,10 +290,12 @@ document.getElementById('btn_mark_tracks').addEventListener('click', (e) => {
 })
 
 document.getElementById('btn_delete_prev').addEventListener('click', (e) => {
+  annotator.updateUndoPoint();
   annotator.deletePreviousSelected()
 })
 
 document.getElementById('btn_delete_next').addEventListener('click', (e) => {
+  annotator.updateUndoPoint();
   annotator.deleteNextSelected()
 })
 
@@ -254,6 +313,7 @@ function updateSize(width, height) {
   } else {
     annotator.BOX_WIDTH = width
     annotator.BOX_HEIGHT = height
+    annotator.updateUndoPoint();
     if (chkbox_interpolate_size.checked) {
       // Apply for all frames
       selected.forEach(e => {
@@ -322,6 +382,10 @@ field_color.addEventListener('input', (e) => {
   })
 })
 
+document.getElementById('btn_undo').addEventListener('click', (e) => {
+  annotator.updateAnnotations(annotator.parseCsvData(annotator.undoPoint))
+})
+
 document.getElementById('btn_revert_tracks').addEventListener('click', (e) => {
   annotator.getSelectedTracks().forEach(e => {
     annotator.revertTrack(e)
@@ -353,6 +417,26 @@ document.getElementById('btn_fps_change').addEventListener('click', (e) => {
   }
 })
 
+// TODO UNIMPLEMENTED
+async function playVideo() {
+
+  await annotator.goToNextFrame();
+
+  // get time
+  let startTime = performance.now()
+  await new Promise((resolve) => {
+    annotator.video.onseeked = () => {
+      resolve(video);
+    };
+  });
+  let endTime = performance.now()
+  console.log(endTime - startTime)
+  // minus get time
+  await new Promise(r => setTimeout(r, 2000/annotator.FRAMERATE - (endTime - startTime)));
+  playVideo()
+}
+
+
 canvas.addEventListener('click', function (event) {
   event.preventDefault()
   const rect = canvas.getBoundingClientRect()
@@ -361,6 +445,7 @@ canvas.addEventListener('click', function (event) {
   const box = annotator.getBoxAtXY(x, y)
   // Give ctrl priority
   if (event.ctrlKey || previewBox) {
+    annotator.updateUndoPoint();
     annotator.addBox(x, y)
   } else {
     if (!event.shiftKey) {
@@ -384,6 +469,7 @@ canvas.addEventListener('contextmenu', function(event) {
   let selectedBoxes = annotator.getSelectedBoxes()
   if (selectedBoxes.length == 1) {
     // Move box
+    annotator.updateUndoPoint();
     annotator.moveBox(selectedBoxes[0], x, y)
   }
 })
