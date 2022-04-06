@@ -22,6 +22,7 @@ let field_fps = document.getElementById('field_fps')
 field_fps.value = annotator.FRAMERATE
 let mouseX, mouseY;
 let previewBox = false;
+let paused = true;
 
 document.getElementById('chkbox_interpolation_mode').checked = false
 document.getElementById('chkbox_dot_mode').checked = false
@@ -46,10 +47,6 @@ document.addEventListener('keydown', async function (e) {
     case 66: // b
       previewBox = !previewBox
       break;
-    //case 73: // i
-      // Increase height
-      //playVideo();
-      //break;
     //case 74: // j
     //  // Decrease width
     //  break;
@@ -75,6 +72,10 @@ document.addEventListener('keydown', async function (e) {
       break;
     case 88: // x
       annotator.deleteSelectedBoxes();
+      break;
+    case 80: // p
+      paused = !paused;
+      await playVideo();
       break;
     default:
       break;
@@ -110,6 +111,18 @@ document.getElementById('btn_prev_frame').addEventListener('click', async functi
 })
 document.getElementById('btn_next_frame').addEventListener('click', async function (e) {
   await annotator.goToNextFrame()
+})
+document.getElementById('btn_play').addEventListener('click', async function (e) {
+  paused = !paused;
+  let button = document.getElementById('btn_play');
+
+  if (button.innerHTML == "Play") {
+    button.innerHTML = "Pause"
+  } else {
+    button.innerHTML = "Play"
+  }
+
+  await playVideo();
 })
 document.getElementById('chkbox_dot_mode').addEventListener('change', function (e) {
   annotator.toggleDotMode()
@@ -417,9 +430,8 @@ document.getElementById('btn_fps_change').addEventListener('click', (e) => {
   }
 })
 
-// TODO UNIMPLEMENTED
+// TODO flickering in Firefox
 async function playVideo() {
-
   await annotator.goToNextFrame();
 
   // get time
@@ -430,12 +442,15 @@ async function playVideo() {
     };
   });
   let endTime = performance.now()
-  console.log(endTime - startTime)
   // minus get time
   await new Promise(r => setTimeout(r, 2000/annotator.FRAMERATE - (endTime - startTime)));
-  playVideo()
-}
 
+  if (paused) {
+    return;
+  } else {
+    playVideo()
+  }
+}
 
 canvas.addEventListener('click', function (event) {
   event.preventDefault()
